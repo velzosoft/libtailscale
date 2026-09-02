@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
+import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
 import 'package:test/test.dart';
 
@@ -481,29 +482,47 @@ void main() {
       );
     });
 
-    test('returns null only when allow_missing_native is set', () async {
-      expect(
-        nativeArtifacts,
-        isEmpty,
-        reason: 'no native release published yet',
-      );
-      expect(
-        await resolver(
-          const HookUserConfig(allowMissingNative: true),
-        ).resolve(),
-        isNull,
-      );
-      await expectLater(
-        resolver(const HookUserConfig()).resolve(),
-        throwsA(
-          isA<BuildError>().having(
-            (e) => e.message,
-            'message',
-            contains('build_from_source'),
+    test(
+      'a failed download is fatal unless allow_missing_native is set',
+      () async {
+        expect(
+          nativeArtifactUrl(target.artifactFileName),
+          isNotNull,
+          reason: 'the manifest pins every release target',
+        );
+        final log = <String>[];
+        NativeLibraryResolver offline(HookUserConfig config) =>
+            NativeLibraryResolver(
+              target: target,
+              config: config,
+              outputDirectory: Uri.directory('${temp.path}/out/'),
+              sharedDirectory: Uri.directory('${temp.path}/shared/'),
+              log: log.add,
+              downloader: ArtifactDownloader(
+                cacheDir: Uri.directory('${temp.path}/shared/'),
+                log: log.add,
+                createHttpClient: _OfflineHttpClient.new,
+              ),
+            );
+        expect(
+          await offline(
+            const HookUserConfig(allowMissingNative: true),
+          ).resolve(),
+          isNull,
+        );
+        expect(log.join('\n'), contains('allow_missing_native'));
+        await expectLater(
+          offline(const HookUserConfig()).resolve(),
+          throwsA(
+            isA<BuildError>().having(
+              (e) => e.message,
+              'message',
+              contains('build_from_source'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('rejects unsupported targets', () async {
       final r = NativeLibraryResolver(
@@ -521,26 +540,41 @@ void main() {
   });
 
   group('hook/build.dart', () {
-    test(
-      'emits only the libc asset when the library is allowed to be missing',
+    // Needs network access to github.com; `dart test -x network` skips it.
+    void networkTest(String name, Future<void> Function() body) {
+      test(name, body, tags: 'network');
+    }
+
+    networkTest(
+      'downloads and verifies the pinned library by default',
       () async {
+        final target = NativeTarget(
+          os: OS.current,
+          architecture: Architecture.current,
+        );
         await testCodeBuildHook(
           mainMethod: hook.main,
           userDefines: PackageUserDefines(
             workspacePubspec: PackageUserDefinesSource(
               // Ignore the developer's hook/local_config.json.
-              defines: {
-                'allow_missing_native': true,
-                'local_config': 'none.json',
-              },
+              defines: {'local_config': 'none.json'},
               basePath: Directory.current.uri,
             ),
           ),
           check: (input, output) {
             final assets = output.assets.code;
-            expect(assets, hasLength(1));
-            expect(assets.single.id, 'package:libtailscale/src/ffi/libc.dart');
-            expect(assets.single.linkMode, isA<LookupInProcess>());
+            expect(assets, hasLength(2));
+            final libc = assets.firstWhere((a) => a.id.endsWith('libc.dart'));
+            expect(libc.linkMode, isA<LookupInProcess>());
+            final lib = assets.firstWhere(
+              (a) => a.id.endsWith('tailscale_bindings.g.dart'),
+            );
+            expect(lib.linkMode, isA<DynamicLoadingBundled>());
+            final bytes = File.fromUri(lib.file!).readAsBytesSync();
+            expect(
+              sha256.convert(bytes).toString(),
+              nativeArtifacts[target.artifactFileName],
+            );
           },
         );
       },
@@ -587,4 +621,17 @@ void main() {
       }
     });
   });
+}
+
+/// An [HttpClient] whose every request fails as if the machine were offline.
+final class _OfflineHttpClient implements HttpClient {
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async =>
+      throw const SocketException('offline');
+
+  @override
+  void close({bool force = false}) {}
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

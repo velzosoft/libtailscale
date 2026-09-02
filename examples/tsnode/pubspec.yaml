@@ -17,8 +17,9 @@ dev_dependencies:
   lints: ^6.1.0
   test: ^1.31.2
 
-# No native release is published yet: build libtailscale with the Go toolchain
-# (see the package README, "Build configuration").
+# Build libtailscale from the checked-out upstream sources so the example
+# exercises the same code as the package tests (Go >= 1.25.5). Remove this to
+# download the prebuilt library instead (package README, "Build configuration").
 hooks:
   user_defines:
     libtailscale:

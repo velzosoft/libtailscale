@@ -102,7 +102,9 @@ the native library at build time, in this order:
 3. Download of the prebuilt library from this repository's native release,
    verified against the SHA-256 pinned in `hook/src/native_manifest.dart`.
 
-Configure it in the **application's** `pubspec.yaml`:
+With no configuration the hook takes option 3 and downloads the library for
+the pinned release. To build from source or use a local copy instead, configure
+it in the **application's** `pubspec.yaml`:
 
 ```yaml
 hooks:
@@ -127,9 +129,6 @@ The file is only read when the root package names it with the
 `local_config` user-define, which this package's own `pubspec.yaml` does.
 Applications, including the examples in this repository, never inherit it and
 configure the hook in their own pubspec as shown above.
-
-> No native release has been published yet, so option 3 is not available:
-> use `build_from_source` or `prebuilt_dir`.
 
 ### Android
 
@@ -196,7 +195,7 @@ dart run tool/build_native.dart --os macos --arch arm64 --out build/native
 ```
 
 The package's own `pubspec.yaml` sets `allow_missing_native: true` so the
-pure-Dart tests run on machines without Go. That setting only applies when the
+pure-Dart tests run on machines without Go or network access. That setting only applies when the
 package is the root package.
 
 ### Cutting a native release

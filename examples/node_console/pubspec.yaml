@@ -24,10 +24,11 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
-# How the application obtains libtailscale.{dylib,so}. No native release is
-# published yet, so build it from the pinned upstream sources with the Go
-# toolchain (Go >= 1.25.5; Xcode for iOS, the NDK for Android). See the
-# package README, "Build configuration", for prebuilt_dir and the download path.
+# How the application obtains libtailscale.{dylib,so}: built from the pinned
+# upstream sources with the Go toolchain (Go >= 1.25.5; Xcode for iOS, the NDK
+# for Android) so the app exercises the checked-out code. Remove this to
+# download the prebuilt library instead; see the package README, "Build
+# configuration", for prebuilt_dir and the download path.
 hooks:
   user_defines:
     libtailscale:

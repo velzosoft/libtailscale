@@ -86,8 +86,9 @@ final class NativeLibraryResolver {
   Uri? get _androidOverlaySource =>
       packageRoot?.resolve(androidOverlayRelativePath);
 
-  /// Resolves the library, or returns `null` when none is available and
-  /// `allow_missing_native` is set. Throws [BuildError] otherwise.
+  /// Resolves the library. Returns `null` when `allow_missing_native` is set
+  /// and no library can be obtained (none published for the target, or the
+  /// download failed). Throws [BuildError] otherwise.
   Future<ResolvedLibrary?> resolve() async {
     if (!target.isSupported) {
       throw BuildError(message: 'libtailscale: ${target.unsupportedReason}');
@@ -96,7 +97,20 @@ final class NativeLibraryResolver {
     if (prebuilt != null) return _fromPrebuilt(prebuilt);
     if (config.buildFromSource) return _fromSource();
     final url = nativeArtifactUrl(target.artifactFileName);
-    if (url != null) return _fromDownload(url);
+    if (url != null) {
+      if (!config.allowMissingNative) return _fromDownload(url);
+      try {
+        return await _fromDownload(url);
+      } on BuildError catch (e) {
+        log(
+          '${e.message}\n'
+          'libtailscale: continuing without the native library because '
+          'allow_missing_native is set. Calls into libtailscale will fail '
+          'at runtime.',
+        );
+        return null;
+      }
+    }
     if (config.allowMissingNative) {
       log(
         'libtailscale: no native library for ${target.artifactKey}; '

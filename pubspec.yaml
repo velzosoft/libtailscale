@@ -43,8 +43,9 @@ dev_dependencies:
 hooks:
   user_defines:
     libtailscale:
-      # Let `dart test` run the pure-Dart unit tests on machines without Go or
-      # a prebuilt library. Tests that need the native library skip themselves.
+      # Let `dart test` run the pure-Dart unit tests on machines without Go,
+      # network access or a prebuilt library. Tests that need the native
+      # library skip themselves.
       allow_missing_native: true
       # Git-ignored developer overrides (build_from_source, build_test_control,
       # ...). Only honoured through this user-define, so dependents that build

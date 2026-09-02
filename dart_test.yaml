@@ -5,3 +5,5 @@ tags:
     timeout: 5m
   # Tests that exercise libc through dart:ffi (pipes, socketpairs, poll).
   native:
+  # Tests that download the pinned native library from the GitHub release.
+  network:
