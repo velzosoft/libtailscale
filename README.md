@@ -220,7 +220,8 @@ package is the root package.
    dart run tool/update_manifest.dart --sums SHA256SUMS --tag native-vX.Y.Z
    ```
 3. Merge that pull request, bump `version:` in `pubspec.yaml`, update the
-   changelog and push a `vX.Y.Z` tag; `publish.yml` publishes to pub.dev.
+   changelog and push a `vX.Y.Z` tag; `publish.yml` publishes to pub.dev (a tag
+   for a version that is already published is skipped, not an error).
 
 `dart run tool/update_manifest.dart --sums SHA256SUMS --tag native-vX.Y.Z --check`
 verifies a checkout against a release's checksum file.
