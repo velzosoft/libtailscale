@@ -1,3 +1,10 @@
+## 1.0.1
+
+* README rewritten for package users: quick start, coverage, credentials,
+  Headscale, sockets, build configuration and platform notes. Development and
+  release instructions moved to `CONTRIBUTING.md`.
+* No code changes.
+
 ## 1.0.0
 
 Initial release.

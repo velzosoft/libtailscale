@@ -2,7 +2,7 @@ name: libtailscale
 description: >-
   Headless Tailscale / Headscale node for Dart and Flutter, embedded through
   dart:ffi bindings to the official libtailscale C library.
-version: 1.0.0
+version: 1.0.1
 repository: https://github.com/velzosoft/libtailscale
 issue_tracker: https://github.com/velzosoft/libtailscale/issues
 topics:
