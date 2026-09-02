@@ -1,0 +1,6 @@
+{"Version":"1.94.1-t1234567890","SessionID":"abc123","State":5,"Health":{"Warnings":{"login-state":{"WarnableCode":"login-state","Severity":"high","Title":"Not logged in","Text":"You are logged out.","ImpactsConnectivity":true}}}}
+
+{"Version":"1.94.1-t1234567890","State":2,"BrowseToURL":"https://headscale.example.com/register/mkey:0123456789abcdef"}
+{"Version":"1.94.1-t1234567890","LoginFinished":{},"State":5}
+{"Version":"1.94.1-t1234567890","State":6,"Health":{"Warnings":{}}}
+{"Version":"1.94.1-t1234567890","ErrMessage":"invalid key: key expired"}

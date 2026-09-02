@@ -1,0 +1,10 @@
+name: libtailscale_ffigen
+description: Maintainer-only tool that regenerates lib/src/ffi/tailscale_bindings.g.dart from third_party/libtailscale/tailscale.h.
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  ffigen: ^21.0.0
+  path: ^1.9.1

@@ -1,0 +1,26 @@
+# Dart / Flutter
+.dart_tool/
+.packages
+build/
+pubspec.lock
+coverage/
+*.log
+
+# Developer override for the build hook
+hook/local_config.json
+
+# Native build outputs
+*.dylib
+*.so
+*.a
+*.h.gch
+native/out/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Local credentials for manual testing; never commit.
+*.env

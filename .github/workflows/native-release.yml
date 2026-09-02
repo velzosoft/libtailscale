@@ -1,0 +1,165 @@
+name: Native release
+
+# Builds libtailscale for every target in NativeTarget.releaseTargets from the
+# pinned upstream commit (the third_party/libtailscale submodule), publishes
+# the libraries plus SHA256SUMS as the `native-vX.Y.Z` GitHub release, checks
+# that every asset downloads back with the right checksum, and opens a pull
+# request that pins the checksums in hook/src/native_manifest.dart.
+#
+# Run it from the Actions tab (input: tag) or push a `native-v*` tag. Merge
+# the manifest pull request, then bump the package version and publish.
+# Creating the pull request requires "Allow GitHub Actions to create and
+# approve pull requests" under Settings > Actions > General; without it the
+# updated manifest is still available as the `native-manifest` artifact.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. native-v0.1.0
+        required: true
+  push:
+    tags: ['native-v*']
+
+concurrency:
+  group: native-release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      # One entry per NativeTarget.releaseTargets; keep the two in sync.
+      matrix:
+        include:
+          - { name: macos-arm64,               runner: macos-15,         os: macos,   arch: arm64 }
+          - { name: macos-x64,                 runner: macos-15,         os: macos,   arch: x64 }
+          - { name: ios-arm64-iphoneos,        runner: macos-15,         os: ios,     arch: arm64, sdk: iphoneos }
+          - { name: ios-arm64-iphonesimulator, runner: macos-15,         os: ios,     arch: arm64, sdk: iphonesimulator }
+          - { name: ios-x64-iphonesimulator,   runner: macos-15,         os: ios,     arch: x64,   sdk: iphonesimulator }
+          - { name: linux-x64,                 runner: ubuntu-24.04,     os: linux,   arch: x64 }
+          - { name: linux-arm64,               runner: ubuntu-24.04-arm, os: linux,   arch: arm64 }
+          - { name: android-arm64,             runner: ubuntu-24.04,     os: android, arch: arm64 }
+          - { name: android-x64,               runner: ubuntu-24.04,     os: android, arch: x64 }
+          - { name: android-arm,               runner: ubuntu-24.04,     os: android, arch: arm }
+    steps:
+      - name: Check the tag
+        run: |
+          [[ "$RELEASE_TAG" =~ ^native-v[0-9]+\.[0-9]+\.[0-9]+ ]] || {
+            echo "RELEASE_TAG must look like native-v1.2.3, got '$RELEASE_TAG'" >&2; exit 1; }
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: third_party/libtailscale/go.mod
+          cache-dependency-path: third_party/libtailscale/go.sum
+      - name: Set up the Android NDK
+        if: matrix.os == 'android'
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27c
+          add-to-path: false
+      - run: dart pub get
+      - name: Build ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          ARGS=(--os "${{ matrix.os }}" --arch "${{ matrix.arch }}" --out out --source third_party/libtailscale)
+          if [ -n "${{ matrix.sdk }}" ]; then ARGS+=(--ios-sdk "${{ matrix.sdk }}"); fi
+          if [ "${{ matrix.os }}" = android ]; then
+            # The generic clang; the build plan adds --target=<triple><api>.
+            ARGS+=(--cc "${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" --android-api 35)
+          fi
+          dart run tool/build_native.dart "${ARGS[@]}" | tee "out/SHA256SUMS.${{ matrix.name }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.name }}
+          if-no-files-found: error
+          path: |
+            out/libtailscale-*.dylib
+            out/libtailscale-*.so
+            out/SHA256SUMS.*
+
+  release:
+    name: Publish ${{ inputs.tag || github.ref_name }}
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Assemble and verify SHA256SUMS
+        working-directory: artifacts
+        run: |
+          set -euo pipefail
+          cat SHA256SUMS.* | sort -k2 > SHA256SUMS
+          rm SHA256SUMS.*
+          sha256sum -c SHA256SUMS
+      - name: Pin the checksums in hook/src/native_manifest.dart
+        # Fails if a release target is missing, before anything is published.
+        run: dart run tool/update_manifest.dart --sums artifacts/SHA256SUMS --tag "$RELEASE_TAG"
+      - name: Release notes
+        run: |
+          set -euo pipefail
+          commit=$(sed -n "s/^const upstreamCommit = '\(.*\)';/\1/p" hook/src/native_manifest.dart)
+          version=$(sed -n "s/^const upstreamTailscaleVersion = '\(.*\)';/\1/p" hook/src/native_manifest.dart)
+          {
+            echo "Prebuilt libtailscale libraries for the Dart package \`libtailscale\`."
+            echo
+            echo "* Built from tailscale/libtailscale@$commit (tailscale.com $version) with Go $(sed -n 's/^go \(.*\)$/\1/p' third_party/libtailscale/go.mod 2>/dev/null || echo see-go.mod)."
+            echo "* macOS 15+, iOS 15+ (device and simulator), Android 15+/API 35 (16 KB pages), Linux glibc 2.39+."
+            echo "* Verify with \`sha256sum -c SHA256SUMS\`. The package's build hook pins these digests in \`hook/src/native_manifest.dart\`."
+          } > artifacts/RELEASE_NOTES.md
+          cat artifacts/RELEASE_NOTES.md
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_TAG }}
+          body_path: artifacts/RELEASE_NOTES.md
+          fail_on_unmatched_files: true
+          files: |
+            artifacts/libtailscale-*
+            artifacts/SHA256SUMS
+      - name: Download the published assets and verify them
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir verify
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir verify
+          (cd verify && sha256sum -c SHA256SUMS)
+          dart run tool/update_manifest.dart --sums verify/SHA256SUMS --tag "$RELEASE_TAG" --check
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-manifest
+          path: hook/src/native_manifest.dart
+      - name: Open the manifest pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: native-manifest/${{ env.RELEASE_TAG }}
+          add-paths: hook/src/native_manifest.dart
+          commit-message: "Pin native release ${{ env.RELEASE_TAG }} checksums"
+          title: "Pin native release ${{ env.RELEASE_TAG }} checksums"
+          body: |
+            Generated by the native-release workflow from the `${{ env.RELEASE_TAG }}`
+            release's `SHA256SUMS`. Merge, then bump the package version and publish.

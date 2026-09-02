@@ -1,0 +1,22 @@
+{
+  "Node": {
+    "ID": 42,
+    "StableID": "nPEER0001",
+    "Name": "demo-b.tail1234.ts.net.",
+    "User": 1001,
+    "Key": "nodekey:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "KeyExpiry": "0001-01-01T00:00:00Z",
+    "Machine": "mkey:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "DiscoKey": "discokey:ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "Addresses": ["100.101.102.104/32", "fd7a:115c:a1e0::1234:5679/128"],
+    "AllowedIPs": ["100.101.102.104/32", "fd7a:115c:a1e0::1234:5679/128"],
+    "Hostinfo": {"OS": "linux", "Hostname": "demo-b"},
+    "Created": "2026-08-01T10:00:00Z",
+    "Tags": ["tag:demo"],
+    "Online": true,
+    "ComputedName": "demo-b",
+    "ComputedNameWithHost": "demo-b"
+  },
+  "UserProfile": {"ID": 1001, "LoginName": "tagged-devices", "DisplayName": "Tagged Devices"},
+  "CapMap": {"example.com/cap/chat": [{"rooms": ["general"]}]}
+}

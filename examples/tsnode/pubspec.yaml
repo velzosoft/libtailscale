@@ -1,0 +1,25 @@
+name: tsnode
+description: >-
+  Headless command-line example for package:libtailscale: join a tailnet
+  (Tailscale or Headscale), inspect the node and its peers, run an echo
+  service, send messages and fetch URLs over the tailnet.
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  args: ^2.7.0
+  libtailscale:
+    path: ../../
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.2
+
+# No native release is published yet: build libtailscale with the Go toolchain
+# (see the package README, "Build configuration").
+hooks:
+  user_defines:
+    libtailscale:
+      build_from_source: true

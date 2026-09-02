@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  analyze-and-unit:
+    name: Analyze & unit tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    steps:
+      - uses: actions/checkout@v4
+      # Flutter's Dart SDK: the repository also contains the Flutter example,
+      # which `dart analyze` from the root picks up as a nested package.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: dart pub get
+      # The nested packages are resolved so that format and analyze from the
+      # root cover them. Their tests are not run here: the examples set
+      # build_from_source, so the hook would compile libtailscale with Go.
+      - run: dart pub get
+        working-directory: examples/tsnode
+      - run: flutter pub get
+        working-directory: examples/node_console
+      - run: dart pub get
+        working-directory: tool/ffigen
+      - run: dart format --output=none --set-exit-if-changed .
+      - run: dart analyze --fatal-infos
+      - run: dart test -x integration --reporter expanded
+
+  hermetic:
+    name: Hermetic integration (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    env:
+      LIBTAILSCALE_INTEGRATION: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: third_party/libtailscale/go.mod
+          cache-dependency-path: third_party/libtailscale/go.sum
+      - run: dart pub get
+      - run: |
+          echo '{"build_from_source": true, "build_test_control": true}' > hook/local_config.json
+      - run: dart test -t integration --reporter expanded
+
+  publish-dry-run:
+    name: pub publish --dry-run
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # pub reports the submodule gitlink as a checked-in ignored file
+          # unless the submodule is populated.
+          submodules: true
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - run: dart pub get
+      - run: dart pub publish --dry-run
+

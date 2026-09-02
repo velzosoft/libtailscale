@@ -1,0 +1,7 @@
+tags:
+  # Tests that need a native libtailscale build (and Go for the hermetic
+  # control server). They skip themselves unless LIBTAILSCALE_INTEGRATION=1.
+  integration:
+    timeout: 5m
+  # Tests that exercise libc through dart:ffi (pipes, socketpairs, poll).
+  native:

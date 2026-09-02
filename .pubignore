@@ -1,0 +1,16 @@
+# Not part of the pub package.
+third_party/
+specs/
+.github/
+.gitmodules
+hook/local_config.json
+# Maintainer-only tooling with its own pubspec (needs ffigen + libclang).
+tool/ffigen/
+# Local build outputs.
+build/
+out/
+keys.env
+*.env
+# The tsnode CLI and the Flutter app live on GitHub, see README.md
+# ("Examples"); example/example.dart is the example shipped with the package.
+examples/

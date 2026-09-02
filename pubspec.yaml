@@ -1,0 +1,52 @@
+name: libtailscale
+description: >-
+  Headless Tailscale / Headscale node for Dart and Flutter, embedded through
+  dart:ffi bindings to the official libtailscale C library.
+version: 1.0.0
+repository: https://github.com/velzosoft/libtailscale
+issue_tracker: https://github.com/velzosoft/libtailscale/issues
+topics:
+  - tailscale
+  - headscale
+  - ffi
+  - networking
+  - vpn
+
+environment:
+  sdk: ^3.10.0
+
+# The TLS fixture is a throwaway self-signed key used only by tests.
+false_secrets:
+  - /test/fixtures/tls/localhost.key.pem
+
+platforms:
+  android:
+  ios:
+  linux:
+  macos:
+
+dependencies:
+  code_assets: '>=1.0.0 <3.0.0'
+  crypto: ^3.0.7
+  ffi: ^2.2.0
+  hooks: '>=1.0.2 <3.0.0'
+  meta: ^1.16.0
+
+dev_dependencies:
+  lints: ^6.1.0
+  test: ^1.31.2
+
+# These user-defines only take effect when this package is the *root* package,
+# i.e. while developing and testing libtailscale itself. Applications that
+# depend on libtailscale configure the hook from their own pubspec.yaml, see
+# README.md ("Build configuration").
+hooks:
+  user_defines:
+    libtailscale:
+      # Let `dart test` run the pure-Dart unit tests on machines without Go or
+      # a prebuilt library. Tests that need the native library skip themselves.
+      allow_missing_native: true
+      # Git-ignored developer overrides (build_from_source, build_test_control,
+      # ...). Only honoured through this user-define, so dependents that build
+      # from a checkout of this repository are unaffected.
+      local_config: hook/local_config.json
