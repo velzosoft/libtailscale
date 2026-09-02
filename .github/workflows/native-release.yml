@@ -4,7 +4,7 @@ name: Native release
 # pinned upstream commit (the third_party/libtailscale submodule), publishes
 # the libraries plus SHA256SUMS as the `native-vX.Y.Z` GitHub release, checks
 # that every asset downloads back with the right checksum, and opens a pull
-# request that pins the checksums in hook/src/native_manifest.dart.
+# request that pins the checksums in lib/src/hook/native_manifest.dart.
 #
 # Run it from the Actions tab (input: tag) or push a `native-v*` tag. Merge
 # the manifest pull request, then bump the package version and publish.
@@ -119,20 +119,20 @@ jobs:
           cat SHA256SUMS.* | sort -k2 > SHA256SUMS
           rm SHA256SUMS.*
           sha256sum -c SHA256SUMS
-      - name: Pin the checksums in hook/src/native_manifest.dart
+      - name: Pin the checksums in lib/src/hook/native_manifest.dart
         # Fails if a release target is missing, before anything is published.
         run: dart run tool/update_manifest.dart --sums artifacts/SHA256SUMS --tag "$RELEASE_TAG"
       - name: Release notes
         run: |
           set -euo pipefail
-          commit=$(sed -n "s/^const upstreamCommit = '\(.*\)';/\1/p" hook/src/native_manifest.dart)
-          version=$(sed -n "s/^const upstreamTailscaleVersion = '\(.*\)';/\1/p" hook/src/native_manifest.dart)
+          commit=$(sed -n "s/^const upstreamCommit = '\(.*\)';/\1/p" lib/src/hook/native_manifest.dart)
+          version=$(sed -n "s/^const upstreamTailscaleVersion = '\(.*\)';/\1/p" lib/src/hook/native_manifest.dart)
           {
             echo "Prebuilt libtailscale libraries for the Dart package \`libtailscale\`."
             echo
             echo "* Built from tailscale/libtailscale@$commit (tailscale.com $version) with Go $(sed -n 's/^go \(.*\)$/\1/p' third_party/libtailscale/go.mod 2>/dev/null || echo see-go.mod)."
             echo "* macOS 15+, iOS 15+ (device and simulator), Android 15+/API 35 (16 KB pages), Linux glibc 2.39+."
-            echo "* Verify with \`sha256sum -c SHA256SUMS\`. The package's build hook pins these digests in \`hook/src/native_manifest.dart\`."
+            echo "* Verify with \`sha256sum -c SHA256SUMS\`. The package's build hook pins these digests in \`lib/src/hook/native_manifest.dart\`."
           } > artifacts/RELEASE_NOTES.md
           cat artifacts/RELEASE_NOTES.md
       - uses: softprops/action-gh-release@v2
@@ -156,14 +156,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: native-manifest
-          path: hook/src/native_manifest.dart
+          path: lib/src/hook/native_manifest.dart
       - name: Open the manifest pull request
         # Fails when Actions may not create pull requests; see the header.
         continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           branch: native-manifest/${{ env.RELEASE_TAG }}
-          add-paths: hook/src/native_manifest.dart
+          add-paths: lib/src/hook/native_manifest.dart
           commit-message: "Pin native release ${{ env.RELEASE_TAG }} checksums"
           title: "Pin native release ${{ env.RELEASE_TAG }} checksums"
           body: |

@@ -3,10 +3,10 @@
 
 import 'dart:io';
 
+import 'package:libtailscale/src/hook/native_manifest.dart';
+import 'package:libtailscale/src/hook/native_target.dart';
 import 'package:test/test.dart';
 
-import '../../hook/src/native_manifest.dart';
-import '../../hook/src/native_target.dart';
 import '../../tool/src/manifest_update.dart';
 
 String _digest(int seed) => seed.toRadixString(16).padLeft(64, '0');
@@ -80,7 +80,7 @@ ${_digest(2).toUpperCase()} *libtailscale-linux-x64.so
   });
 
   group('updateManifestSource', () {
-    final source = File('hook/src/native_manifest.dart').readAsStringSync();
+    final source = File('lib/src/hook/native_manifest.dart').readAsStringSync();
 
     test('reads the committed manifest', () {
       final current = readManifest(source);

@@ -8,7 +8,7 @@ import 'package:ffi/ffi.dart';
 
 import '../ffi/libc.dart';
 
-/// Exported by `hook/go/android_interfaces.go`, which the build hook compiles
+/// Exported by `lib/src/hook/android_interfaces.go`, which the build hook compiles
 /// into the Android library only: sets a variable in the Go runtime's copy of
 /// the environment, which is taken when the library loads and is therefore
 /// not updated by a later C `setenv(3)`.

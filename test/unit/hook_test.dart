@@ -7,15 +7,15 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:crypto/crypto.dart';
 import 'package:hooks/hooks.dart';
+import 'package:libtailscale/src/hook/artifact_download.dart';
+import 'package:libtailscale/src/hook/go_build.dart';
+import 'package:libtailscale/src/hook/native_manifest.dart';
+import 'package:libtailscale/src/hook/native_target.dart';
+import 'package:libtailscale/src/hook/resolver.dart';
+import 'package:libtailscale/src/hook/user_config.dart';
 import 'package:test/test.dart';
 
 import '../../hook/build.dart' as hook;
-import '../../hook/src/artifact_download.dart';
-import '../../hook/src/go_build.dart';
-import '../../hook/src/native_manifest.dart';
-import '../../hook/src/native_target.dart';
-import '../../hook/src/resolver.dart';
-import '../../hook/src/user_config.dart';
 
 void main() {
   group('NativeTarget', () {
@@ -160,7 +160,9 @@ void main() {
         sourceDir: src,
         outputDir: out,
         cCompiler: ndk,
-        androidOverlaySource: Uri.file('/pkg/hook/go/android_interfaces.go'),
+        androidOverlaySource: Uri.file(
+          '/pkg/lib/src/hook/android_interfaces.go',
+        ),
       );
       final env = plan.steps.single.environment;
       expect(env['CC'], '/ndk/bin/aarch64-linux-android35-clang');
@@ -174,7 +176,7 @@ void main() {
       expect(jsonDecode(overlay.contents), {
         'Replace': {
           '/src/libtailscale/zz_libtailscale_dart_android_interfaces.go':
-              '/pkg/hook/go/android_interfaces.go',
+              '/pkg/lib/src/hook/android_interfaces.go',
         },
       });
       expect(env['GOOS'], 'android');

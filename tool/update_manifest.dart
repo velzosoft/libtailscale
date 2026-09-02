@@ -1,7 +1,7 @@
 // Copyright (c) 2026 the libtailscale Dart package authors.
 // SPDX-License-Identifier: BSD-3-Clause
 
-/// Pins a native release in `hook/src/native_manifest.dart`.
+/// Pins a native release in `lib/src/hook/native_manifest.dart`.
 ///
 /// ```sh
 /// # After the release workflow produced SHA256SUMS for native-v0.1.0:
@@ -21,7 +21,7 @@ import 'src/manifest_update.dart';
 
 Future<void> main(List<String> args) async {
   String? sums, tag;
-  var manifestPath = 'hook/src/native_manifest.dart';
+  var manifestPath = 'lib/src/hook/native_manifest.dart';
   var check = false;
   var allowIncomplete = false;
   for (var i = 0; i < args.length; i++) {
@@ -106,7 +106,7 @@ Never _usage(String? error) {
   if (error != null) stderr.writeln('error: $error\n');
   stderr.writeln(
     'usage: dart run tool/update_manifest.dart --sums <SHA256SUMS> '
-    '--tag <native-vX.Y.Z> [--manifest hook/src/native_manifest.dart] '
+    '--tag <native-vX.Y.Z> [--manifest lib/src/hook/native_manifest.dart] '
     '[--check] [--allow-incomplete]',
   );
   exit(error == null ? 0 : 64);

@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 /// Pure helpers behind `tool/update_manifest.dart`: parse a `SHA256SUMS`
-/// file and rewrite the generated constants in `hook/src/native_manifest.dart`.
+/// file and rewrite the generated constants in `lib/src/hook/native_manifest.dart`.
 library;
 
-import '../../hook/src/native_target.dart';
+import 'package:libtailscale/src/hook/native_target.dart';
 
 final _hex64 = RegExp(r'^[0-9a-f]{64}$');
 final _tagPattern = RegExp(r"const nativeReleaseTag = '([^']*)';");

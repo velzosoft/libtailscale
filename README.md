@@ -100,7 +100,7 @@ the native library at build time, in this order:
    iOS is built as a c-archive and linked into a dylib because Go has no
    c-shared mode for `GOOS=ios`.
 3. Download of the prebuilt library from this repository's native release,
-   verified against the SHA-256 pinned in `hook/src/native_manifest.dart`.
+   verified against the SHA-256 pinned in `lib/src/hook/native_manifest.dart`.
 
 With no configuration the hook takes option 3 and downloads the library for
 the pinned release. To build from source or use a local copy instead, configure
@@ -137,7 +137,7 @@ Add the `INTERNET` permission to your manifest.
 
 Two Android-only accommodations are built in. Apps may not use netlink
 `RTM_GETLINK` since Android 11, which breaks Go's `net.Interfaces()` inside
-tsnet; the hook therefore compiles `hook/go/android_interfaces.go` into the
+tsnet; the hook therefore compiles `lib/src/hook/android_interfaces.go` into the
 library (through `go build -overlay`, the upstream tree stays untouched),
 registering a `getifaddrs(3)`-based interface getter with tailscale's netmon.
 And because an app process has no `$HOME` or `$TMPDIR`, which makes tsnet's
@@ -202,13 +202,13 @@ package is the root package.
 
 1. Bump the submodule if upstream moved and update `upstreamCommit`,
    `upstreamTailscaleVersion` and `minimumGoVersion` in
-   `hook/src/native_manifest.dart`; run the hermetic tests.
+   `lib/src/hook/native_manifest.dart`; run the hermetic tests.
 2. Start the **Native release** workflow (Actions tab, input `native-vX.Y.Z`,
    or push that tag). It builds the ten libraries in
    `NativeTarget.releaseTargets` on macOS, Linux x64/arm64 and Android runners,
    publishes them with `SHA256SUMS` as a GitHub release, downloads every asset
    back to verify it, and opens a pull request that pins the digests in
-   `hook/src/native_manifest.dart` (`tool/update_manifest.dart`).
+   `lib/src/hook/native_manifest.dart` (`tool/update_manifest.dart`).
    Opening the pull request needs "Allow GitHub Actions to create and approve
    pull requests" in the repository's Actions settings (and, for an
    organization, in the organization's). Without it the step fails softly and

@@ -4,7 +4,7 @@
 /// Build hook: provides `libtailscale.{dylib,so}` for the target platform and
 /// registers it (plus an in-process libc lookup) as code assets.
 ///
-/// See `hook/src/user_config.dart` for the configuration knobs.
+/// See `lib/src/hook/user_config.dart` for the configuration knobs.
 library;
 
 import 'dart:io';
@@ -12,9 +12,9 @@ import 'dart:io';
 import 'package:code_assets/code_assets.dart';
 import 'package:hooks/hooks.dart';
 
-import 'src/native_target.dart';
-import 'src/resolver.dart';
-import 'src/user_config.dart';
+import 'package:libtailscale/src/hook/native_target.dart';
+import 'package:libtailscale/src/hook/resolver.dart';
+import 'package:libtailscale/src/hook/user_config.dart';
 
 /// Asset id of the generated `tailscale_*` bindings.
 const tailscaleAssetName = 'src/ffi/tailscale_bindings.g.dart';

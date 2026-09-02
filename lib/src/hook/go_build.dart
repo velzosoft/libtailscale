@@ -13,7 +13,7 @@ import 'native_target.dart';
 /// `go build -overlay`, relative to this package's root. It registers a
 /// getifaddrs(3)-based interface getter with netmon because Android 11+ denies
 /// the netlink call Go's `net.Interfaces()` relies on.
-const androidOverlayRelativePath = 'hook/go/android_interfaces.go';
+const androidOverlayRelativePath = 'lib/src/hook/android_interfaces.go';
 
 /// File name the overlay gives that file inside the upstream package.
 const androidOverlayFileName = 'zz_libtailscale_dart_android_interfaces.go';

@@ -292,7 +292,7 @@ libtailscale/                       # this folder = the pub package
 ├── lib/src/ffi/{tailscale_bindings.g.dart (ffigen output), libc.dart, tailscale_api.dart}
 ├── lib/src/runtime/{native_worker,fd_reactor,socks5,local_api,ndjson,node_events,oauth_exchange}.dart
 ├── lib/src/api/{node,config,sockets,status,state,addresses,exceptions}.dart
-├── hook/build.dart · hook/src/{native_target,native_manifest,user_config,go_build,artifact_download,resolver}.dart
+├── hook/build.dart · lib/src/hook/{native_target,native_manifest,user_config,go_build,artifact_download,resolver}.dart
 ├── tool/build_native.dart · tool/update_manifest.dart · tool/ffigen/ (separate pubspec: ffigen 21 pins code_assets 1.x)
 ├── test/{unit,native,integration}/ · test/fixtures/
 ├── example/example.dart            # single-file example for pub.dev

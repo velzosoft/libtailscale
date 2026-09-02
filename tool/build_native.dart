@@ -12,17 +12,17 @@
 ///
 /// Prints `<sha256>  <artifact file name>` (the `sha256sum` format) so the
 /// release workflow can concatenate the lines into `SHA256SUMS` and
-/// `tool/update_manifest.dart` can pin them in `hook/src/native_manifest.dart`.
+/// `tool/update_manifest.dart` can pin them in `lib/src/hook/native_manifest.dart`.
 library;
 
 import 'dart:io';
 
 import 'package:code_assets/code_assets.dart';
 
-import '../hook/src/artifact_download.dart';
-import '../hook/src/go_build.dart';
-import '../hook/src/native_manifest.dart';
-import '../hook/src/native_target.dart';
+import 'package:libtailscale/src/hook/artifact_download.dart';
+import 'package:libtailscale/src/hook/go_build.dart';
+import 'package:libtailscale/src/hook/native_manifest.dart';
+import 'package:libtailscale/src/hook/native_target.dart';
 
 Future<void> main(List<String> args) async {
   final options = _parse(args);
