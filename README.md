@@ -1,13 +1,20 @@
 # libtailscale
 
-A **headless** Tailscale / Headscale node for Dart and Flutter, embedded in your
-process through `dart:ffi` bindings to the official
-[libtailscale](https://github.com/tailscale/libtailscale) C library.
+A headless Tailscale / Headscale node for Dart and Flutter. It embeds the
+official [libtailscale](https://github.com/tailscale/libtailscale) C library
+through `dart:ffi`, joins a tailnet with the credential your app supplies, and
+lets the app open and accept connections over it. No UI, no browser, no
+platform channels.
 
-The host application supplies a control-server URL and a credential; the
-library joins the tailnet and exposes just enough to **control** the node and
-**operate** over it. It renders nothing, opens no browser and has no platform
-channels.
+Supported: macOS 15+, iOS 15+, Android 15+ (API 35), Linux with glibc 2.39+.
+Not supported: Windows and web, because libtailscale is Unix-only.
+
+## Quick start
+
+```yaml
+dependencies:
+  libtailscale: ^1.0.0
+```
 
 ```dart
 import 'package:libtailscale/libtailscale.dart';
@@ -35,76 +42,75 @@ node.stateChanges.listen((s) => print('tailscale: $s'));
 await node.close();
 ```
 
-## Scope
+The prebuilt native library is downloaded and checksum-verified when the app is
+built. See [Build configuration](#build-configuration) for the alternatives.
 
-| Area | Included | Deliberately excluded |
-|---|---|---|
-| Configure | control URL (Tailscale or Headscale); auth / pre-auth key, Tailscale OAuth client, existing state, or interactive login; hostname; state directory; ephemeral | web client, WireGuard port, custom stores |
-| Control | `start()`, `waitUntilRunning()`, `close()`, `logout()`, `stateChanges`, `health`, `authUrls` | any UI, browser launching |
-| Observe | `addresses`, `status()` with peers, `whoIs(ip)`, `logs` | metrics, bug reports, profiles |
-| Operate | `connect()` → `Socket`, `connectSecure()`, `httpClient()`, `listen()`/accept, `dial()`, half-close | UDP, Taildrop, Serve, SSH, exit-node switching |
-| Platforms | macOS 15+, iOS 15+, Android 15+ (API 35), Linux with glibc 2.39+ | Windows (libtailscale is Unix-only), web |
+## What is covered
 
-Anything else in tailscaled's LocalAPI stays reachable through
+* **Configure**: control URL (Tailscale or Headscale), credential, hostname,
+  state directory, ephemeral node.
+* **Control**: `start()`, `waitUntilRunning()`, `logout()`, `close()`, and the
+  `stateChanges`, `health`, `authUrls` and `logs` streams.
+* **Observe**: `addresses`, `status()` with peers and users, `whoIs(ip)`.
+* **Operate**: `connect()`, `connectSecure()` and `httpClient()` give you a real
+  `dart:io` `Socket` or `HttpClient` over the tailnet; `listen()` and `dial()`
+  give you `TailscaleSocket`s.
+
+Deliberately left out: UDP, Taildrop, Serve, SSH, exit-node switching and any
+kind of UI. Anything else in tailscaled's LocalAPI is reachable through
 `node.localApi.raw(...)`, without compatibility guarantees.
 
 ## Credentials
 
 | Credential | Works with | Notes |
 |---|---|---|
-| `TailscaleCredential.authKey(key)` | Tailscale auth keys, Headscale pre-auth keys | Reusable / ephemeral / tags are properties of the key. |
-| `TailscaleCredential.oauthClient(clientId:, clientSecret:, tags:)` | Tailscale only | The library mints a short-lived tagged auth key through the Tailscale API before starting. |
-| `TailscaleCredential.existingState()` | both | Reuses the node key in `stateDir`; fails fast with `TailscaleAuthRequiredException` if a login is needed. |
-| `TailscaleCredential.interactive()` | both | Publishes the login URL on `node.authUrls`; the app decides what to do with it. On Headscale an admin approves the node with `headscale auth register --auth-id <id from the URL> --user <user>` (`nodes register --key` before 0.29). |
+| `TailscaleCredential.authKey(key)` | Tailscale auth keys, Headscale pre-auth keys | Reusable, ephemeral and tags are properties of the key. |
+| `TailscaleCredential.oauthClient(...)` | Tailscale only | Mints a short-lived tagged auth key through the Tailscale API before starting. |
+| `TailscaleCredential.existingState()` | both | Reuses the node key in `stateDir`; throws `TailscaleAuthRequiredException` if a login is needed. |
+| `TailscaleCredential.interactive()` | both | Publishes the login URL on `node.authUrls`; your app decides what to do with it. |
 
 ## Headscale
 
 Point `controlUrl` at the Headscale base URL; nothing else changes. Headscale
-has no OAuth client API (use pre-auth keys), issues no TLS certificates
-(`status.certDomains` is empty) and does not support Funnel or Serve.
-`enableFunnelToLocalhost` refuses to run without a certificate domain because
-the underlying C call would crash the process.
+has no OAuth client API (use pre-auth keys), issues no TLS certificates and does
+not support Funnel or Serve. For interactive logins an admin approves the node
+with `headscale auth register --auth-id <id from the URL> --user <user>`.
 
-An unreachable or wrong control URL produces no error from tsnet; the node just
-stays in `Starting`/`NeedsLogin`. `waitUntilRunning` therefore always takes a
-timeout and reports the last state and health messages in the exception.
+An unreachable or wrong control URL produces no error; the node just stays in
+`Starting` or `NeedsLogin`. `waitUntilRunning` therefore always takes a timeout
+and reports the last state and health messages in its exception.
 
 ## Sockets and TLS
 
 * `connect()` returns a `Socks5Socket`, a real `dart:io` `Socket` tunnelled
-  through the node's loopback SOCKS5 proxy. Because the SOCKS handshake consumes
-  the raw stream, use `socket.secure(...)` (or `node.connectSecure`) for TLS
-  instead of `SecureSocket.secure`.
-* `httpClient()` sets `connectionFactory` so `package:http`'s `IOClient`,
-  `dio`, gRPC and `WebSocket.connect(customClient:)` work unchanged. Pass a
-  `SecurityContext` / bad-certificate callback to `httpClient()` itself.
+  through the node's loopback SOCKS5 proxy. For TLS use `socket.secure(...)` or
+  `node.connectSecure()`, not `SecureSocket.secure`.
+* `httpClient()` returns an `HttpClient` whose connections go over the tailnet,
+  so `package:http`, `dio`, gRPC and `WebSocket.connect(customClient:)` work
+  unchanged.
 * `listen()` and `dial()` use libtailscale's file-descriptor path and yield
-  `TailscaleSocket` (a `Stream<Uint8List>` + `IOSink`). Dart cannot wrap a
-  foreign fd in a `Socket`, so TLS is not available on that path.
+  `TailscaleSocket` (a `Stream<Uint8List>` plus an `IOSink`). TLS is not
+  available on that path.
 
-Everything that can block runs on helper isolates (`Isolate.run`); a dedicated
-isolate drives all fds with a single `poll(2)` loop.
+Nothing blocks the calling isolate: blocking calls run on helper isolates, and a
+dedicated isolate drives every file descriptor with one `poll(2)` loop.
 
 ## Build configuration
 
-The package ships no binaries in the pub archive. `hook/build.dart` provides
-the native library at build time, in this order:
+The pub package contains no binaries. A build hook provides the native library
+when the app is built, trying these in order:
 
-1. `prebuilt_dir`: a directory containing `libtailscale.{dylib,so}` (or the
-   architecture-specific `libtailscale-<os>-<arch>[-<sdk>].<ext>`).
-2. `build_from_source`: `go build -buildmode=c-shared` from a pinned upstream
-   checkout (any installed Go; the NDK/Xcode toolchains for mobile). The hook
-   sets `GOTOOLCHAIN=go1.25.5+auto` so `go` downloads and uses the exact
-   version upstream builds with, because newer Go releases break tailscale's
-   pinned dependencies; set `go_toolchain: local` to use the installed one.
-   iOS is built as a c-archive and linked into a dylib because Go has no
-   c-shared mode for `GOOS=ios`.
-3. Download of the prebuilt library from this repository's native release,
-   verified against the SHA-256 pinned in `lib/src/hook/native_manifest.dart`.
+1. `prebuilt_dir`: a directory you supply containing `libtailscale.{dylib,so}`
+   or the architecture-specific `libtailscale-<os>-<arch>[-<sdk>].<ext>`.
+2. `build_from_source`: `go build` from a pinned upstream checkout. Needs Go
+   (the hook selects the version upstream builds with through `GOTOOLCHAIN`)
+   and the NDK or Xcode for mobile targets.
+3. Download of the prebuilt library from this repository's GitHub release,
+   verified against the SHA-256 pinned in the package.
 
-With no configuration the hook takes option 3 and downloads the library for
-the pinned release. To build from source or use a local copy instead, configure
-it in the **application's** `pubspec.yaml`:
+Option 3 is the default and needs no configuration, only network access to
+github.com at build time. To use one of the others, add to the
+**application's** `pubspec.yaml`:
 
 ```yaml
 hooks:
@@ -116,137 +122,52 @@ hooks:
       # go: /usr/local/go/bin/go
 ```
 
-Hooks run with a filtered environment, so environment variables cannot
-configure the build. While developing this package itself, a git-ignored
-`hook/local_config.json` takes the same keys and overrides the pubspec
-values:
-
-```json
-{"build_from_source": true, "build_test_control": true}
-```
-
-The file is only read when the root package names it with the
-`local_config` user-define, which this package's own `pubspec.yaml` does.
-Applications, including the examples in this repository, never inherit it and
-configure the hook in their own pubspec as shown above.
-
 ### Android
 
-Minimum API 35. The library is linked with 16 KB page alignment and a soname.
-Add the `INTERNET` permission to your manifest.
-
-Two Android-only accommodations are built in. Apps may not use netlink
-`RTM_GETLINK` since Android 11, which breaks Go's `net.Interfaces()` inside
-tsnet; the hook therefore compiles `lib/src/hook/android_interfaces.go` into the
-library (through `go build -overlay`, the upstream tree stays untouched),
-registering a `getifaddrs(3)`-based interface getter with tailscale's netmon.
-And because an app process has no `$HOME` or `$TMPDIR`, which makes tsnet's
-log policy panic, `start()` sets both to the state directory when missing, in
-the C environment and, through a helper exported by that same Go file, in the
-Go runtime's copy of it.
+Minimum API 35; add the `INTERNET` permission. The library is built with 16 KB
+page alignment. Two Android quirks are handled for you: apps may not list
+network interfaces through netlink, so the library ships its own interface
+getter, and app processes have no `$HOME` or `$TMPDIR`, so `start()` points
+both at the state directory.
 
 ### iOS
 
-Minimum iOS 15. Flutter wraps the dylib in `tailscale.framework` (it drops the `lib` prefix). Userspace
-WireGuard stops while the app is suspended; upstream reports the loopback
-listener can become stale afterwards, in which case the node falls back to
-`tailscale_status_json` for status and `dial()` keeps working. Set
+Minimum iOS 15. Flutter bundles the library as `tailscale.framework`. Set
 `NSLocalNetworkUsageDescription` (peers on the same LAN are reached directly)
 and ship a privacy manifest; the one in `examples/node_console/ios/Runner`
-declares the file-timestamp and system-boot-time API categories the Go
-runtime and tsnet use.
-
-### Flutter versions
-
-The hook depends on `package:hooks` and `package:code_assets` with ranges that
-include the versions pinned by the current Flutter stable (`hooks` 1.0.x,
-`code_assets` 1.0.x) as well as the 2.x releases used with a plain Dart SDK.
+declares the API categories the Go runtime and tsnet use. WireGuard stops while
+the app is suspended; if the loopback listener is stale afterwards, `status()`
+falls back to the C status call and `dial()` keeps working.
 
 ### Linux
 
-Built on Ubuntu 24.04; requires glibc ≥ 2.39.
+Built on Ubuntu 24.04; requires glibc 2.39 or newer.
+
+### Flutter and Dart SDKs
+
+The hook works with the `hooks` and `code_assets` versions pinned by Flutter
+stable as well as the newer releases used with a plain Dart SDK.
 
 ## Examples
 
 * [`example/example.dart`](example/example.dart): the whole API in one short
-  program: join with an auth key, print node and peers, echo service, dial a
-  peer.
-* [`examples/tsnode/`](examples/tsnode/): `tsnode`, a headless command-line node
-  built on the public API: `join`, `info`, `peers`, `echo`, `send` and `fetch`. Its README
-  shows how to try it against Tailscale, Headscale, or the in-process test
-  control server without any account.
+  program.
+* [`examples/tsnode/`](examples/tsnode/): a headless command-line node with
+  `join`, `info`, `peers`, `echo`, `send` and `fetch`.
 * [`examples/node_console/`](examples/node_console/): a Flutter app for macOS,
-  iOS, Android and Linux with three screens (Connect, Node, Communicate) on top
-  of one controller; chat and HTTP fetch interoperate with `tsnode`. See its
-  README for the device checklist and the platform settings (entitlements,
-  permissions, privacy manifest) an embedding app needs. Both directories under
-  `examples/` are repository-only; the pub archive ships `example/example.dart`.
-
-## Development
-
-```sh
-git submodule update --init                 # upstream sources (header, Go code)
-dart test                                   # unit + libc/reactor tests, no Go needed
-dart test -x native                         # pure Dart only
-echo '{"build_from_source": true, "build_test_control": true}' > hook/local_config.json
-LIBTAILSCALE_INTEGRATION=1 dart test -t integration          # hermetic e2e (Go)
-(cd tool/ffigen && dart run bin/generate.dart)               # regenerate bindings
-dart run tool/build_native.dart --os macos --arch arm64 --out build/native
-```
-
-The package's own `pubspec.yaml` sets `allow_missing_native: true` so the
-pure-Dart tests run on machines without Go or network access. That setting only applies when the
-package is the root package.
-
-### Cutting a native release
-
-1. Bump the submodule if upstream moved and update `upstreamCommit`,
-   `upstreamTailscaleVersion` and `minimumGoVersion` in
-   `lib/src/hook/native_manifest.dart`; run the hermetic tests.
-2. Start the **Native release** workflow (Actions tab, input `native-vX.Y.Z`,
-   or push that tag). It builds the ten libraries in
-   `NativeTarget.releaseTargets` on macOS, Linux x64/arm64 and Android runners,
-   publishes them with `SHA256SUMS` as a GitHub release, downloads every asset
-   back to verify it, and opens a pull request that pins the digests in
-   `lib/src/hook/native_manifest.dart` (`tool/update_manifest.dart`).
-   Opening the pull request needs "Allow GitHub Actions to create and approve
-   pull requests" in the repository's Actions settings (and, for an
-   organization, in the organization's). Without it the step fails softly and
-   the `native-manifest/native-vX.Y.Z` branch is still pushed: open the pull
-   request by hand, or pin the checksums locally:
-
-   ```sh
-   gh release download native-vX.Y.Z --pattern SHA256SUMS
-   dart run tool/update_manifest.dart --sums SHA256SUMS --tag native-vX.Y.Z
-   ```
-3. Merge that pull request, bump `version:` in `pubspec.yaml`, update the
-   changelog and push a `vX.Y.Z` tag; `publish.yml` publishes to pub.dev (a tag
-   for a version that is already published is skipped, not an error).
-
-`dart run tool/update_manifest.dart --sums SHA256SUMS --tag native-vX.Y.Z --check`
-verifies a checkout against a release's checksum file.
-
-### Repository layout
-
-| Path | Contents |
-|---|---|
-| `lib/`, `hook/`, `test/` | The package: bindings, runtime, public API, build hook, tests. |
-| `tool/` | `build_native.dart` (release builds), `update_manifest.dart` (pins release checksums) and the ffigen tool package. |
-| `example/` | `example.dart`, the single-file example shown on pub.dev. |
-| `examples/tsnode/`, `examples/node_console/` | The `tsnode` CLI and the Flutter app (repository only, not in the pub archive). |
-| `third_party/libtailscale/` | Upstream sources as a git submodule, pinned to the commit the native libraries are built from. Excluded from the pub archive. |
-| `specs/` | Design plan and research notes. |
+  iOS, Android and Linux; its README lists the platform settings an embedding
+  app needs.
 
 ## Known limitations
 
-* `tailscale_up` is never used: it blocks and cannot be cancelled.
-  `waitUntilRunning` implements the same condition in Dart.
-* `tailscale_close` does not close listeners or connections; the node tracks
-  and closes every fd itself before calling it.
-* UDP is not exposed in this version (the fd path loses datagram boundaries;
-  SOCKS5 `UDP ASSOCIATE` is planned).
+* UDP is not exposed yet.
 * One pipe write end is intentionally leaked per node started with
-  `captureLogs: true`, because Go owns that fd number.
+  `captureLogs: true`, because Go owns that file descriptor.
+
+## Contributing
+
+Development setup, the test suites, cutting a native release and the repository
+layout are described in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
