@@ -210,6 +210,16 @@ package is the root package.
    publishes them with `SHA256SUMS` as a GitHub release, downloads every asset
    back to verify it, and opens a pull request that pins the digests in
    `hook/src/native_manifest.dart` (`tool/update_manifest.dart`).
+   Opening the pull request needs "Allow GitHub Actions to create and approve
+   pull requests" in the repository's Actions settings (and, for an
+   organization, in the organization's). Without it the step fails softly and
+   the `native-manifest/native-vX.Y.Z` branch is still pushed: open the pull
+   request by hand, or pin the checksums locally:
+
+   ```sh
+   gh release download native-vX.Y.Z --pattern SHA256SUMS
+   dart run tool/update_manifest.dart --sums SHA256SUMS --tag native-vX.Y.Z
+   ```
 3. Merge that pull request, bump `version:` in `pubspec.yaml`, update the
    changelog and push a `vX.Y.Z` tag; `publish.yml` publishes to pub.dev.
 

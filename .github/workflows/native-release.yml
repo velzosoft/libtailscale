@@ -8,9 +8,13 @@ name: Native release
 #
 # Run it from the Actions tab (input: tag) or push a `native-v*` tag. Merge
 # the manifest pull request, then bump the package version and publish.
-# Creating the pull request requires "Allow GitHub Actions to create and
-# approve pull requests" under Settings > Actions > General; without it the
-# updated manifest is still available as the `native-manifest` artifact.
+# Opening the pull request needs "Allow GitHub Actions to create and approve
+# pull requests" (Settings > Actions > General; for an organization repository
+# the same switch in the organization's Actions settings). Without it that
+# last step fails softly: the `native-manifest/<tag>` branch is still pushed,
+# so open the pull request by hand, or pin the checksums locally with
+#   gh release download <tag> --pattern SHA256SUMS
+#   dart run tool/update_manifest.dart --sums SHA256SUMS --tag <tag>
 
 on:
   workflow_dispatch:
@@ -154,6 +158,8 @@ jobs:
           name: native-manifest
           path: hook/src/native_manifest.dart
       - name: Open the manifest pull request
+        # Fails when Actions may not create pull requests; see the header.
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
           branch: native-manifest/${{ env.RELEASE_TAG }}
