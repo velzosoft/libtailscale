@@ -314,7 +314,21 @@ void main() {
       expect(config.goExecutable, '/usr/local/go/bin/go');
       expect(config.allowMissingNative, isFalse);
       expect(config.buildTestControl, isFalse);
+      expect(config.skipUnsupportedTargets, isFalse);
       expect(config.sourceDir, isNull);
+    });
+
+    test('skip_unsupported_targets is an opt-in flag', () {
+      bool skip(Object? value) => HookUserConfig.resolve(
+        value: (k) => k == 'skip_unsupported_targets' ? value : null,
+        path: (_) => null,
+      ).skipUnsupportedTargets;
+      expect(skip(null), isFalse);
+      expect(skip(true), isTrue);
+      expect(skip('yes'), isTrue);
+      expect(skip('1'), isTrue);
+      expect(skip(false), isFalse);
+      expect(skip('no'), isFalse);
     });
 
     test('local override file wins and resolves relative paths', () async {
@@ -325,7 +339,8 @@ void main() {
         expect(LocalHookConfig.read(file), isNull);
         file.createSync(recursive: true);
         file.writeAsStringSync(
-          '{"build_from_source": true, "source_dir": "../upstream", "build_test_control": 1}',
+          '{"build_from_source": true, "source_dir": "../upstream", '
+          '"build_test_control": 1, "skip_unsupported_targets": "on"}',
         );
         final local = LocalHookConfig.read(file)!;
         expect(local.has('build_from_source'), isTrue);
@@ -334,6 +349,7 @@ void main() {
 
         final defines = <String, Object?>{
           'build_from_source': false,
+          'skip_unsupported_targets': false,
           'go': 'go2',
         };
         final config = HookUserConfig.resolve(
@@ -346,6 +362,7 @@ void main() {
           reason: 'local overrides pubspec',
         );
         expect(config.buildTestControl, isTrue);
+        expect(config.skipUnsupportedTargets, isTrue);
         expect(config.goExecutable, 'go2', reason: 'falls through to pubspec');
         expect(config.sourceDir!.path, endsWith('/upstream/'));
 
@@ -526,19 +543,43 @@ void main() {
       },
     );
 
-    test('rejects unsupported targets', () async {
-      final r = NativeLibraryResolver(
-        target: const NativeTarget(
-          os: OS.windows,
-          architecture: Architecture.x64,
-        ),
-        config: const HookUserConfig(allowMissingNative: true),
-        outputDirectory: Uri.directory('${temp.path}/out/'),
-        sharedDirectory: Uri.directory('${temp.path}/shared/'),
-        log: (_) {},
-      );
-      await expectLater(r.resolve(), throwsA(isA<BuildError>()));
-    });
+    test(
+      'rejects unsupported targets and names skip_unsupported_targets',
+      () async {
+        for (final config in const [
+          HookUserConfig(),
+          HookUserConfig(allowMissingNative: true),
+          // The hook acts on this option before it calls the resolver; the
+          // resolver ignores it, so it cannot hide a failure.
+          HookUserConfig(skipUnsupportedTargets: true),
+        ]) {
+          final r = NativeLibraryResolver(
+            target: const NativeTarget(
+              os: OS.windows,
+              architecture: Architecture.x64,
+            ),
+            config: config,
+            outputDirectory: Uri.directory('${temp.path}/out/'),
+            sharedDirectory: Uri.directory('${temp.path}/shared/'),
+            log: (_) {},
+          );
+          await expectLater(
+            r.resolve(),
+            throwsA(
+              isA<BuildError>().having(
+                (e) => e.message,
+                'message',
+                allOf(
+                  contains('does not compile for Windows'),
+                  contains('skip_unsupported_targets: true'),
+                ),
+              ),
+            ),
+            reason: '$config',
+          );
+        }
+      },
+    );
   });
 
   group('hook/build.dart', () {
@@ -592,35 +633,70 @@ void main() {
         File(
           '${temp.path}/${target.libraryFileName}',
         ).writeAsStringSync('not really a library');
-        await testCodeBuildHook(
-          mainMethod: hook.main,
-          userDefines: PackageUserDefines(
-            workspacePubspec: PackageUserDefinesSource(
-              defines: {'prebuilt_dir': temp.path, 'local_config': 'none.json'},
-              basePath: Directory.current.uri,
+        // skip_unsupported_targets changes nothing on a supported target.
+        for (final skip in [false, true]) {
+          await testCodeBuildHook(
+            mainMethod: hook.main,
+            userDefines: PackageUserDefines(
+              workspacePubspec: PackageUserDefinesSource(
+                defines: {
+                  'prebuilt_dir': temp.path,
+                  'local_config': 'none.json',
+                  'skip_unsupported_targets': skip,
+                },
+                basePath: Directory.current.uri,
+              ),
             ),
-          ),
-          check: (input, output) {
-            final assets = output.assets.code;
-            expect(
-              assets.map((a) => a.id),
-              containsAll([
-                'package:libtailscale/src/ffi/libc.dart',
-                'package:libtailscale/src/ffi/tailscale_bindings.g.dart',
-              ]),
-            );
-            final lib = assets.firstWhere(
-              (a) => a.id.endsWith('tailscale_bindings.g.dart'),
-            );
-            expect(lib.linkMode, isA<DynamicLoadingBundled>());
-            expect(lib.file!.path, endsWith('/${target.libraryFileName}'));
-            expect(File.fromUri(lib.file!).existsSync(), isTrue);
-            expect(output.dependencies, isNotEmpty);
-          },
-        );
+            check: (input, output) {
+              final assets = output.assets.code;
+              expect(
+                assets.map((a) => a.id),
+                containsAll([
+                  'package:libtailscale/src/ffi/libc.dart',
+                  'package:libtailscale/src/ffi/tailscale_bindings.g.dart',
+                ]),
+              );
+              final lib = assets.firstWhere(
+                (a) => a.id.endsWith('tailscale_bindings.g.dart'),
+              );
+              expect(lib.linkMode, isA<DynamicLoadingBundled>());
+              expect(lib.file!.path, endsWith('/${target.libraryFileName}'));
+              expect(File.fromUri(lib.file!).existsSync(), isTrue);
+              expect(output.dependencies, isNotEmpty);
+            },
+          );
+        }
       } finally {
         await temp.delete(recursive: true);
       }
+    });
+
+    // The failing case (option unset) is covered by the resolver test above:
+    // on a BuildError the hooks package calls exit(), which would kill the
+    // test runner.
+    test('skip_unsupported_targets emits nothing for Windows', () async {
+      await testCodeBuildHook(
+        mainMethod: hook.main,
+        targetOS: OS.windows,
+        targetArchitecture: Architecture.x64,
+        userDefines: PackageUserDefines(
+          workspacePubspec: PackageUserDefinesSource(
+            defines: {
+              'skip_unsupported_targets': true,
+              'local_config': 'none.json',
+            },
+            basePath: Directory.current.uri,
+          ),
+        ),
+        check: (input, output) {
+          expect(output.assets.code, isEmpty);
+          expect(
+            output.dependencies,
+            contains(Directory.current.uri.resolve('none.json')),
+            reason: 'the local config still re-runs the hook',
+          );
+        },
+      );
     });
   });
 }

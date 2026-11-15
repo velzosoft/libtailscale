@@ -1,3 +1,15 @@
+## 1.1.0
+
+* New `skip_unsupported_targets` user-define: an app that never uses
+  libtailscale on a platform it does not support, such as Windows, can now
+  build for that platform. The hook bundles nothing for it
+  ([#1](https://github.com/velzosoft/libtailscale/issues/1)).
+* Without the option, the build error for an unsupported platform now names
+  it.
+* `TailscaleNode.start()` throws `TailscaleUnsupportedException` at once on an
+  unsupported platform, instead of failing later with an FFI symbol-lookup
+  error.
+
 ## 1.0.1
 
 * README rewritten for package users: quick start, coverage, credentials,

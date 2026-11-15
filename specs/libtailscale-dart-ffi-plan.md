@@ -253,6 +253,8 @@ SDK constraints: Dart `^3.10.0` (hooks stable since 3.10), Flutter ≥ 3.38. Loc
 4. Emit the `libtailscale` `CodeAsset` (`DynamicLoadingBundled`) and the libc `CodeAsset` (`LookupInProcess`).
 5. Declare `output.dependencies` on the manifest and the recipe files so caching invalidates correctly.
 
+An unsupported target (§4.6) fails the build, unless the app sets `skip_unsupported_targets`; then the hook emits nothing for it (since 1.1.0).
+
 ### 4.3 Release pipeline (GitHub Actions, in our repo)
 
 - `native-release.yml`: matrix builds every artifact from a pinned libtailscale commit (git submodule under `third_party/libtailscale`), runs on `macos-15` (darwin arm64/x64, iOS device + simulators, Android via NDK) and `ubuntu-24.04` (linux x64; arm64 either via the native `ubuntu-24.04-arm` runner or an `aarch64-linux-gnu-gcc` cross build). Uploads `*.tar.gz` + `SHA256SUMS` to tag `native-vX.Y.Z` and opens a PR bumping `hook/native_manifest.dart`.

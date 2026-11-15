@@ -7,13 +7,15 @@ lets the app open and accept connections over it. No UI, no browser, no
 platform channels.
 
 Supported: macOS 15+, iOS 15+, Android 15+ (API 35), Linux with glibc 2.39+.
-Not supported: Windows and web, because libtailscale is Unix-only.
+Not supported: Windows and web, because libtailscale is Unix-only. An app that
+also ships on Windows can still build for it; see
+[Windows and other unsupported platforms](#windows-and-other-unsupported-platforms).
 
 ## Quick start
 
 ```yaml
 dependencies:
-  libtailscale: ^1.0.0
+  libtailscale: ^1.1.0
 ```
 
 ```dart
@@ -121,6 +123,32 @@ hooks:
       # source_dir: ../libtailscale
       # go: /usr/local/go/bin/go
 ```
+
+### Windows and other unsupported platforms
+
+By default the hook fails the build for a platform libtailscale does not
+support, such as Windows. Flutter cannot limit a dependency to some platforms,
+so an app that uses libtailscale on, say, Android but also builds for Windows
+must tell the hook to skip those platforms:
+
+```yaml
+hooks:
+  user_defines:
+    libtailscale:
+      skip_unsupported_targets: true
+```
+
+The hook then bundles nothing for those platforms, and `TailscaleNode.start()`
+throws a `TailscaleUnsupportedException` there before doing anything else. Only
+set the option if the app never starts a node on those platforms, and guard the
+call with a platform check or catch the exception:
+
+```dart
+if (!Platform.isWindows) await node.start();
+```
+
+The option changes nothing on supported platforms: a failed download or source
+build still fails the build.
 
 ### Android
 

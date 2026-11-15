@@ -141,7 +141,8 @@ final class Socks5Exception extends TailscaleException {
 }
 
 /// The operation is not supported in the current configuration, e.g. Funnel
-/// on a Headscale control server.
+/// on a Headscale control server, or [TailscaleNode.start] on a platform
+/// libtailscale does not support (such as Windows).
 final class TailscaleUnsupportedException extends TailscaleException {
   /// Creates the exception.
   const TailscaleUnsupportedException(super.message);

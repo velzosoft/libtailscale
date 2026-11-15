@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: BSD-3-Clause
 
 /// Build hook: provides `libtailscale.{dylib,so}` for the target platform and
-/// registers it (plus an in-process libc lookup) as code assets.
+/// registers it (plus an in-process libc lookup) as code assets. A target
+/// libtailscale does not support fails the build, unless the application sets
+/// `skip_unsupported_targets`; then the hook emits nothing for it.
 ///
 /// See `lib/src/hook/user_config.dart` for the configuration knobs.
 library;
@@ -30,6 +32,28 @@ void main(List<String> arguments) => build(arguments, (input, output) async {
   final code = input.config.code;
   final package = input.packageName;
 
+  final target = NativeTarget.fromCodeConfig(code);
+  final config = HookUserConfig.from(input);
+  // Re-run when the developer override file changes or gets created. Only
+  // this package's own pubspec names one; applications never pay for it.
+  // Added before the early return below, so that toggling
+  // skip_unsupported_targets in that file also re-runs the hook.
+  final localConfig = HookUserConfig.localConfigFile(input);
+  if (localConfig != null) output.dependencies.add(localConfig.uri);
+
+  // An app that never uses libtailscale on, say, Windows can still build for
+  // it. Nothing is emitted, not even the libc asset, and the resolver and the
+  // test-control build are never reached. Unsupported targets without the
+  // option fall through to the resolver, which fails the build.
+  if (!target.isSupported && config.skipUnsupportedTargets) {
+    stderr.writeln(
+      'libtailscale: ${target.unsupportedReason}. Skipping the native library '
+      'for $target because skip_unsupported_targets is set; '
+      'TailscaleNode.start() will throw on this platform.',
+    );
+    return;
+  }
+
   // libc symbols (read/write/poll/...) are resolved in the running
   // process on every supported platform; no library to ship.
   output.assets.code.add(
@@ -40,12 +64,6 @@ void main(List<String> arguments) => build(arguments, (input, output) async {
     ),
   );
 
-  final target = NativeTarget.fromCodeConfig(code);
-  final config = HookUserConfig.from(input);
-  // Re-run when the developer override file changes or gets created. Only
-  // this package's own pubspec names one; applications never pay for it.
-  final localConfig = HookUserConfig.localConfigFile(input);
-  if (localConfig != null) output.dependencies.add(localConfig.uri);
   final resolver = NativeLibraryResolver(
     target: target,
     config: config,

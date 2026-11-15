@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ffi' show Abi;
 import 'dart:io';
 
 import '../ffi/libc.dart';
@@ -12,6 +13,7 @@ import '../runtime/local_api.dart';
 import '../runtime/native_worker.dart';
 import '../runtime/node_events.dart';
 import '../runtime/oauth_exchange.dart';
+import '../runtime/platform_support.dart';
 import '../runtime/process_environment.dart';
 import '../runtime/socks5.dart';
 import 'addresses.dart';
@@ -99,6 +101,12 @@ final class TailscaleNode {
   ///
   /// Returns as soon as the backend is running its state machine; use
   /// [waitUntilRunning] to wait for connectivity.
+  ///
+  /// Throws [TailscaleUnsupportedException] at once on a platform
+  /// libtailscale does not support, such as Windows, where an app built with
+  /// `skip_unsupported_targets` has no native library. Nothing else happens
+  /// in that case: the node can still be closed, and a second call throws
+  /// the same exception.
   Future<void> start() async {
     switch (_phase) {
       case _Phase.created:
@@ -108,6 +116,12 @@ final class TailscaleNode {
         throw StateError('TailscaleNode.start() was already called');
       case _Phase.closed:
         throw const TailscaleClosedException();
+    }
+    // Only the real bindings need the native library; a replacement passed
+    // as `native` (e.g. a fake in an app's tests) may run anywhere.
+    if (_native is FfiTailscale) {
+      final unsupported = unsupportedAbiReason(Abi.current());
+      if (unsupported != null) throw TailscaleUnsupportedException(unsupported);
     }
     _phase = _Phase.starting;
     config.validate();

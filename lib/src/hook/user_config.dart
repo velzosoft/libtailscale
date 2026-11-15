@@ -38,6 +38,7 @@ const localConfigFileName = 'hook/local_config.json';
 ///       go: /usr/local/go/bin/go
 ///       go_toolchain: local          # default: go1.25.5+auto (see native_manifest)
 ///       allow_missing_native: true   # this package's tests only
+///       skip_unsupported_targets: true  # build for e.g. Windows without the library
 ///       build_test_control: true     # tests only: hermetic control server
 ///       local_config: hook/local_config.json  # developer override file
 /// ```
@@ -54,6 +55,7 @@ final class HookUserConfig {
     this.goExecutable,
     this.goToolchain,
     this.buildTestControl = false,
+    this.skipUnsupportedTargets = false,
   });
 
   /// Reads the configuration from the pubspec user-defines in [input] and the
@@ -95,6 +97,7 @@ final class HookUserConfig {
           ? toolchain
           : null,
       buildTestControl: _truthy(value('build_test_control')),
+      skipUnsupportedTargets: _truthy(value('skip_unsupported_targets')),
     );
   }
 
@@ -127,6 +130,15 @@ final class HookUserConfig {
   /// and STUN) for the hermetic integration tests. Needs Go.
   final bool buildTestControl;
 
+  /// Build for targets libtailscale does not support (e.g. Windows) without
+  /// the native library instead of failing the build. The hook then emits no
+  /// assets for the target and `TailscaleNode.start()` throws there.
+  ///
+  /// Only for applications that never use libtailscale on those platforms.
+  /// It has no effect on supported targets: a failed download or source
+  /// build still fails the build.
+  final bool skipUnsupportedTargets;
+
   static bool _truthy(Object? value) => switch (value) {
     final bool b => b,
     final String s => const {
@@ -147,7 +159,8 @@ final class HookUserConfig {
       'HookUserConfig(prebuiltDir: $prebuiltDir, '
       'buildFromSource: $buildFromSource, allowMissingNative: $allowMissingNative, '
       'sourceDir: $sourceDir, go: $goExecutable, goToolchain: $goToolchain, '
-      'buildTestControl: $buildTestControl)';
+      'buildTestControl: $buildTestControl, '
+      'skipUnsupportedTargets: $skipUnsupportedTargets)';
 }
 
 /// The parsed [localConfigFileName] file.

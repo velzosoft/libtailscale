@@ -89,9 +89,20 @@ final class NativeLibraryResolver {
   /// Resolves the library. Returns `null` when `allow_missing_native` is set
   /// and no library can be obtained (none published for the target, or the
   /// download failed). Throws [BuildError] otherwise.
+  ///
+  /// An unsupported target always throws, whatever the configuration. The
+  /// build hook handles `skip_unsupported_targets` before it gets here, so
+  /// that option can never hide a failure on a supported target.
   Future<ResolvedLibrary?> resolve() async {
     if (!target.isSupported) {
-      throw BuildError(message: 'libtailscale: ${target.unsupportedReason}');
+      throw BuildError(
+        message:
+            'libtailscale: ${target.unsupportedReason}.\n'
+            'If this app never uses libtailscale on this platform, build '
+            'without the native library:\n'
+            '  hooks:\n    user_defines:\n      libtailscale:\n'
+            '        skip_unsupported_targets: true',
+      );
     }
     final prebuilt = config.prebuiltDir;
     if (prebuilt != null) return _fromPrebuilt(prebuilt);
