@@ -1,3 +1,9 @@
+## 1.1.1
+
+* The build hook no longer reports deprecation notices with `code_assets`
+  2.2.0, the version Flutter 3.50 resolves.
+* No behaviour changes.
+
 ## 1.1.0
 
 * New `skip_unsupported_targets` user-define: an app that never uses
