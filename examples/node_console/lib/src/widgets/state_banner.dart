@@ -1,8 +1,8 @@
 // Copyright (c) 2026 the libtailscale Dart package authors.
 // SPDX-License-Identifier: BSD-3-Clause
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../node_controller.dart';
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 the libtailscale Dart package authors.
 // SPDX-License-Identifier: BSD-3-Clause
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../chat_service.dart';
 import '../http_probe.dart';
@@ -50,9 +50,8 @@ class _CommunicateScreenState extends State<CommunicateScreen> {
       _message.clear();
     } on Exception catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Send failed: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('Send failed: $e')));
       }
     } finally {
       if (mounted) setState(() => _sending = false);

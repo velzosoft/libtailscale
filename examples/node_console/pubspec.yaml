@@ -6,14 +6,17 @@ description: >-
 publish_to: none
 version: 0.1.0+1
 
+# package:material_ui needs Flutter 3.47 (Dart 3.13) or newer.
 environment:
-  sdk: ^3.10.0
+  sdk: ^3.13.0
+  flutter: '>=3.47.0'
 
 dependencies:
   flutter:
     sdk: flutter
   libtailscale:
     path: ../../
+  material_ui: ^1.11.0
   path_provider: ^2.1.6
 
 dev_dependencies:

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 the libtailscale Dart package authors.
 // SPDX-License-Identifier: BSD-3-Clause
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A labelled, selectable value line.
 class KeyValueRow extends StatelessWidget {
@@ -65,9 +65,8 @@ class SectionHeader extends StatelessWidget {
     padding: const EdgeInsets.only(top: 16, bottom: 6),
     child: Text(
       title,
-      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-        color: Theme.of(context).colorScheme.primary,
-      ),
+      style: Theme.of(context).textTheme.titleSmall
+          ?.copyWith(color: Theme.of(context).colorScheme.primary),
     ),
   );
 }

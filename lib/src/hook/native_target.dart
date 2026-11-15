@@ -20,14 +20,22 @@ final class NativeTarget {
   });
 
   /// Reads the target from a build hook's code configuration.
+  ///
+  /// The deployment targets are read through `targetVersion`, which
+  /// code_assets 2.2.0 deprecates in favour of `deploymentVersion.major`. The
+  /// replacement does not exist in the older code_assets releases this
+  /// package still supports (see pubspec.yaml), and both return the same
+  /// major version.
   factory NativeTarget.fromCodeConfig(CodeConfig code) => NativeTarget(
     os: code.targetOS,
     architecture: code.targetArchitecture,
     iosSdk: code.targetOS == OS.iOS ? code.iOS.targetSdk : null,
+    // ignore: deprecated_member_use
     iosVersion: code.targetOS == OS.iOS ? code.iOS.targetVersion : null,
     androidNdkApi: code.targetOS == OS.android
         ? code.android.targetNdkApi
         : null,
+    // ignore: deprecated_member_use
     macosVersion: code.targetOS == OS.macOS ? code.macOS.targetVersion : null,
   );
 
