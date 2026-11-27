@@ -490,3 +490,27 @@ final class GoBuilder {
     return result;
   }
 }
+
+/// The files `go build` reads from the Go package in [dir]: its Go sources
+/// (not tests), C sources, headers and module files.
+///
+/// A source build declares them as hook dependencies so that it reruns when
+/// upstream adds or changes one (it added `fd_linux.go` and `fd_other.go`).
+/// [fallback] names the files to declare when [dir] cannot be listed.
+List<Uri> goPackageFiles(Uri dir, {required List<String> fallback}) {
+  final directory = Directory.fromUri(dir);
+  if (!directory.existsSync()) {
+    return [for (final name in fallback) dir.resolve(name)];
+  }
+  bool isBuildInput(String name) =>
+      (name.endsWith('.go') && !name.endsWith('_test.go')) ||
+      name.endsWith('.c') ||
+      name.endsWith('.h') ||
+      name == 'go.mod' ||
+      name == 'go.sum';
+  return [
+    for (final entity in directory.listSync())
+      if (entity is File && isBuildInput(entity.uri.pathSegments.last))
+        entity.uri,
+  ]..sort((a, b) => a.path.compareTo(b.path));
+}

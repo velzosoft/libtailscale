@@ -18,7 +18,7 @@ dev_dependencies:
   test: ^1.31.2
 
 # Build libtailscale from the checked-out upstream sources so the example
-# exercises the same code as the package tests (Go >= 1.25.5). Remove this to
+# exercises the same code as the package tests (Go >= 1.27.1). Remove this to
 # download the prebuilt library instead (package README, "Build configuration").
 hooks:
   user_defines:

@@ -32,11 +32,11 @@ const localConfigFileName = 'hook/local_config.json';
 /// hooks:
 ///   user_defines:
 ///     libtailscale:
-///       build_from_source: true      # needs Go >= 1.25.5 (+ NDK / Xcode)
+///       build_from_source: true      # needs Go >= 1.27.1 (+ NDK / Xcode)
 ///       prebuilt_dir: native/libs    # air-gapped builds
 ///       source_dir: ../libtailscale  # Go sources for build_from_source
 ///       go: /usr/local/go/bin/go
-///       go_toolchain: local          # default: go1.25.5+auto (see native_manifest)
+///       go_toolchain: local          # default: go1.27.1+auto (see native_manifest)
 ///       allow_missing_native: true   # this package's tests only
 ///       skip_unsupported_targets: true  # build for e.g. Windows without the library
 ///       build_test_control: true     # tests only: hermetic control server

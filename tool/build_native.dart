@@ -150,7 +150,7 @@ Never _usage(String? error) {
     'usage: dart run tool/build_native.dart --os <macos|linux|ios|android> '
     '--arch <arm64|x64|arm> --out <dir> [--ios-sdk iphoneos|iphonesimulator] '
     '[--android-api 35] [--source <libtailscale checkout>] [--cc <clang>] '
-    '[--go <go>] [--go-toolchain go1.25.5+auto|local]',
+    '[--go <go>] [--go-toolchain go1.27.1+auto|local]',
   );
   exit(error == null ? 0 : 64);
 }

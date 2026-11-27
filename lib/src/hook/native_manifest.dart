@@ -14,22 +14,22 @@ const upstreamRepository = 'https://github.com/tailscale/libtailscale';
 
 /// Upstream commit the native libraries are built from (also the
 /// `third_party/libtailscale` submodule revision).
-const upstreamCommit = '59d4bb82744915815178e0f0776d60026a397ee7';
+const upstreamCommit = 'dacde75057ff350e146505829beff446e6823966';
 
 /// `tailscale.com` version pinned by that commit's `go.mod`.
-const upstreamTailscaleVersion = 'v1.94.1';
+const upstreamTailscaleVersion = 'v1.104.1';
 
 /// Minimum Go toolchain for source builds (upstream `go.mod` directive).
-const minimumGoVersion = '1.25.5';
+const minimumGoVersion = '1.27.1';
 
 /// `GOTOOLCHAIN` value used for source builds.
 ///
-/// Newer Go releases break the pinned tailscale dependency set (Go 1.27
-/// changed the `encoding/json/v2` API that `go-json-experiment/json` aliases),
-/// so the hook asks `go` to use exactly the upstream version, downloading it
-/// on first use. The `+auto` suffix still lets `go.mod` demand something
-/// newer. Override with the `go_toolchain` user-define (`local` keeps the
-/// installed toolchain).
+/// A Go release newer than the pinned tailscale dependency set can break it
+/// (Go 1.27 changed the `encoding/json/v2` API that `go-json-experiment/json`
+/// aliases, which broke tailscale.com v1.94.1), so the hook asks `go` to use
+/// exactly the upstream version, downloading it on first use. The `+auto`
+/// suffix still lets `go.mod` demand something newer. Override with the
+/// `go_toolchain` user-define (`local` keeps the installed toolchain).
 const defaultGoToolchain = 'go$minimumGoVersion+auto';
 
 /// Release tag holding the prebuilt libraries.

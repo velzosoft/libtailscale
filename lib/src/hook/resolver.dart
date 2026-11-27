@@ -191,9 +191,10 @@ final class NativeLibraryResolver {
         file,
         NativeLibrarySource.source,
         dependencies: [
-          sourceDir.resolve('tailscale.go'),
-          sourceDir.resolve('tailscale.c'),
-          sourceDir.resolve('go.mod'),
+          ...goPackageFiles(
+            sourceDir,
+            fallback: ['tailscale.go', 'tailscale.c', 'go.mod'],
+          ),
           if (target.os == OS.android && _androidOverlaySource != null)
             _androidOverlaySource!,
         ],
@@ -230,7 +231,15 @@ final class NativeLibraryResolver {
       return ResolvedLibrary(
         file,
         NativeLibrarySource.source,
-        dependencies: [sourceDir.resolve('tstestcontrol/tstestcontrol.go')],
+        dependencies: [
+          ...goPackageFiles(
+            sourceDir.resolve('tstestcontrol/'),
+            fallback: ['tstestcontrol.go'],
+          ),
+          // The package shares the upstream module.
+          sourceDir.resolve('go.mod'),
+          sourceDir.resolve('go.sum'),
+        ],
       );
     } on StateError catch (e) {
       throw BuildError(

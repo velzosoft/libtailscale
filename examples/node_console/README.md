@@ -20,7 +20,7 @@ The widgets contain no networking code.
 
 The library is built from the pinned upstream Go sources by the package's
 build hook (`hooks.user_defines.libtailscale.build_from_source: true` in
-`pubspec.yaml`), so a Go toolchain (>= 1.25.5) must be on `PATH`. The first
+`pubspec.yaml`), so a Go toolchain (>= 1.27.1) must be on `PATH`. The first
 build of each target takes a few minutes; later builds hit Go's cache.
 
 ```sh

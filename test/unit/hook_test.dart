@@ -119,7 +119,7 @@ void main() {
       expect(step.environment['GOOS'], 'darwin');
       expect(step.environment['GOARCH'], 'amd64');
       expect(step.environment['CGO_ENABLED'], '1');
-      expect(step.environment['GOTOOLCHAIN'], 'go1.25.5+auto');
+      expect(step.environment['GOTOOLCHAIN'], 'go1.27.1+auto');
       expect(step.environment['MACOSX_DEPLOYMENT_TARGET'], '15.0');
       expect(step.environment['CGO_CFLAGS'], '-mmacos-version-min=15.0');
       expect(
@@ -289,6 +289,46 @@ void main() {
         ),
         throwsUnsupportedError,
       );
+    });
+  });
+
+  group('goPackageFiles', () {
+    test('lists every build input of the package, not its tests', () async {
+      final temp = await Directory.systemTemp.createTemp('libtailscale-pkg');
+      addTearDown(() => temp.delete(recursive: true));
+      for (final name in [
+        'tailscale.go',
+        'fd_linux.go',
+        'fd_other.go',
+        'tailscale.c',
+        'tailscale.h',
+        'go.mod',
+        'go.sum',
+        'tailscale_test.go',
+        'README.md',
+      ]) {
+        File('${temp.path}/$name').writeAsStringSync('');
+      }
+      Directory('${temp.path}/tstestcontrol').createSync();
+
+      final files = goPackageFiles(temp.uri, fallback: ['tailscale.go']);
+      expect(files.map((f) => f.pathSegments.last), [
+        'fd_linux.go',
+        'fd_other.go',
+        'go.mod',
+        'go.sum',
+        'tailscale.c',
+        'tailscale.go',
+        'tailscale.h',
+      ]);
+    });
+
+    test('falls back to the given names when the directory is missing', () {
+      final dir = Uri.directory('/nonexistent/libtailscale/');
+      expect(goPackageFiles(dir, fallback: ['tailscale.go', 'go.mod']), [
+        dir.resolve('tailscale.go'),
+        dir.resolve('go.mod'),
+      ]);
     });
   });
 

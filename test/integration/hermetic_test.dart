@@ -4,7 +4,7 @@
 /// Hermetic end-to-end tests: two nodes join an in-process control server
 /// (no network, no account) and talk to each other.
 ///
-/// Requirements: Go >= 1.25.5, a `hook/local_config.json` containing
+/// Requirements: Go >= 1.27.1, a `hook/local_config.json` containing
 /// `{"build_from_source": true, "build_test_control": true}`, and
 /// `LIBTAILSCALE_INTEGRATION=1 dart test -t integration`.
 @Tags(['integration', 'native'])
