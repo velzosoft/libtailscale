@@ -15,7 +15,7 @@ also ships on Windows can still build for it; see
 
 ```yaml
 dependencies:
-  libtailscale: ^1.1.0
+  libtailscale: ^1.2.0
 ```
 
 ```dart

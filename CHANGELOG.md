@@ -1,3 +1,20 @@
+## 1.2.0
+
+* Built on tailscale.com v1.104.1 (was v1.94.1), from upstream libtailscale
+  `dacde75`. The prebuilt libraries come from the `native-v0.2.0` release.
+* Upstream fixes that reach this package:
+  * A `TailscaleSocket` accepted by `TailscaleServerSocket` could report
+    another peer's `remoteAddress` when file descriptor numbers were reused.
+  * Listener and connection file descriptors are close-on-exec, so a
+    `Process` started by the app no longer keeps them open (and delays EOF
+    on close).
+  * Closing a connection could shut down an unrelated, reused descriptor.
+* Source builds (`build_from_source`) need Go 1.27.1. The hook still selects
+  that version through `GOTOOLCHAIN`, so any Go that can switch toolchains
+  works.
+* Source builds rerun when any of upstream's Go or C files change, not only
+  `tailscale.go`, `tailscale.c` and `go.mod`.
+
 ## 1.1.1
 
 * The build hook no longer reports deprecation notices with `code_assets`
