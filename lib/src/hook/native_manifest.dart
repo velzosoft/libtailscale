@@ -33,7 +33,7 @@ const minimumGoVersion = '1.27.1';
 const defaultGoToolchain = 'go$minimumGoVersion+auto';
 
 /// Release tag holding the prebuilt libraries.
-const nativeReleaseTag = 'native-v0.1.0';
+const nativeReleaseTag = 'native-v0.2.0';
 
 /// Base URL of GitHub release downloads.
 const nativeReleaseBaseUrl =
@@ -46,25 +46,25 @@ const nativeReleaseBaseUrl =
 /// `tool/update_manifest.dart` regenerates it from a release's `SHA256SUMS`.
 const nativeArtifacts = <String, String>{
   'libtailscale-macos-arm64.dylib':
-      'f977313a9ce64217192bcf08e2bbe25fc19f6c532e0cd039fd5b9b29bd7ef591',
+      '8acf53bd798f94bb3d3f6288387113b3b7783cd4281af436927981bf56bc907d',
   'libtailscale-macos-x64.dylib':
-      '8715064fae70e3603481b6d834ceaa772d28ab4961c055524cc6bba295a63460',
+      '8df7360d6ea20a1a35b07353dc5b25ad2485f3441d2da323be309d2ef874e4ea',
   'libtailscale-ios-arm64-iphoneos.dylib':
-      '9cb55bc0046a9bd64e47bc32ed1fb3e57394092390ca36e3ce0f4a2a69fce5d3',
+      'aceeabb6060a483a855b28cee1c6777bb9959a3e935f754a15fe1953d03b4fe8',
   'libtailscale-ios-arm64-iphonesimulator.dylib':
-      'e2d2a26b6c7840ac6189508744d3ba1e9473029aec1ce41c92a7d953f005ed59',
+      'afd5e26b0f62bdedb08019a28d8aeefec848a618a6345d6bab540e94d0348718',
   'libtailscale-ios-x64-iphonesimulator.dylib':
-      '695e758074b0f9cd3161f8cb26fae1479787e8c7f135204094dc8a741afec69c',
+      '436d5aaebd2d5d7f295284d4611f15c81e01ccb450e1bb84738e29bf333e27e9',
   'libtailscale-linux-x64.so':
-      'b9030644ac93e5d809e0f428c24df25869d52bf8769fa55adbb126c817fa97e4',
+      '0ec0b6dde9436ac309b05751cd89bf97de52f6e394263d90c54928e30ee58aca',
   'libtailscale-linux-arm64.so':
-      'b142c7beac954ed15373c4a87b7d85f6ff218929eb04392fdf463f66aaa6dbf5',
+      'e3e042828280b3531ac33e6aa42bd199bb0dde60545e8ad322bffa8fc3ea5954',
   'libtailscale-android-arm64.so':
-      'a2178ba9d30e22331c0436c46c40f3a5dc34f93cdbabd8d95f240035e73d4a97',
+      'ee6b607e17549dbe692ac300538ba3fda2a200b3b2649c25075ed16eaaba30a1',
   'libtailscale-android-x64.so':
-      '9880547657cdd43ce16ee0a3ef99318725cd08827d46884e1b25c218b368caab',
+      '4ef65d6abeb80cb7543a80d54f56d3b5e54832fa0220049758709f555eec5e59',
   'libtailscale-android-arm.so':
-      '4e7834ed426bbe0ca59be4af27c51adf85c88d0e2e799e98f0149d3cec824aa1',
+      '3896680aeab77aeabb92efe5e2f4b911868cc16e3d0ba9828a20d8ee4c62ba5b',
 };
 
 /// Download URL for [artifactFileName], or `null` if it is not published.
